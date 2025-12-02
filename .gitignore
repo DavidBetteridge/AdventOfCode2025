@@ -423,3 +423,5 @@ FodyWeavers.xsd
 **/part2.dSYM/Contents/Resources/DWARF/part2
 **/part2.dSYM/Contents/Resources/Relocations/aarch64/part2.yml
 **/part2.dSYM/Contents/Info.plist
+**/part1
+**/part2
