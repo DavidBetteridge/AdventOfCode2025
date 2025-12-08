@@ -1,4 +1,5 @@
 #include "common.cpp"
+#include "queue"
 
 struct junction_box
 {
@@ -11,32 +12,33 @@ struct junction_box
 
     long distance(junction_box const & other) const
     {
-        return sqrt( pow((x - other.x),2) + pow((y - other.y),2) + pow((z - other.z),2)  );
+        //return sqrt( pow((x - other.x),2) + pow((y - other.y),2) + pow((z - other.z),2)  );
+        return pow((x - other.x),2) + pow((y - other.y),2) + pow((z - other.z),2);
     }
 };
 
-int createCircuit(std::vector<std::vector<int>>& circuits, const junction_box & box1, const junction_box & box2)
+int createCircuit(std::vector<std::vector<int>>& circuits, const int & box1, const int & box2)
 {
-    std::vector<int> newCircuit({box1.circuit_number, box2.circuit_number});
+    std::vector<int> newCircuit({box1, box2});
     circuits.push_back(newCircuit);
     return circuits.size() - 1;
 }
 
-int circuitContaining(const std::vector<std::vector<int>>& circuits, const junction_box & box)
+int circuitContaining(const std::vector<std::vector<int>>& circuits, const int & box)
 {
     for(auto c=0; c<circuits.size(); c++)
     {
         auto circuit = circuits[c];
-        if(std::find(circuit.begin(), circuit.end(), box.circuit_number) != circuit.end()) {
+        if(std::find(circuit.begin(), circuit.end(), box) != circuit.end()) {
             return c;
         }
     }
     return -1;
 }
 
-void addToCircuit(std::vector<std::vector<int>>& circuits, int circuitsId, const junction_box & box)
+void addToCircuit(std::vector<std::vector<int>>& circuits, int circuitsId, const int & box)
 {
-    circuits[circuitsId].push_back(box.circuit_number);
+    circuits[circuitsId].push_back(box);
 }
 
 void mergeCircuits(std::vector<std::vector<int>>& circuits, int circuitsId1, int circuitsId2)
@@ -47,9 +49,19 @@ void mergeCircuits(std::vector<std::vector<int>>& circuits, int circuitsId1, int
     circuits[circuitsId2].clear();
 }
 
+struct connection
+{
+    int box1;
+    int box2;
+    long distance;
+
+    connection(int box1, long box2, long distance) : box1(box1), box2(box2), distance(distance) {};
+};
+
 int main()
 {
-    auto lines = read_lines_from_file("sample1.txt");
+    const int connections = 1000;
+    auto lines = read_lines_from_file("input.txt");
 
     std::vector<junction_box> junction_boxes;
     auto circuit_number = 0;
@@ -60,39 +72,58 @@ int main()
         circuit_number++;
     }
 
-    std::vector<std::vector<int>> circuits;
-    for (const auto &box : junction_boxes)
+    auto cmp = [](connection left, connection right) { return (left.distance) > (right.distance); };
+    std::priority_queue<connection, std::vector<connection>, decltype(cmp)> Q(cmp);
+
+    for(auto x=0; x<junction_boxes.size()-1; x++)
     {
-        long best_distance = 999999;
-        const junction_box* best_box = nullptr;
-        for (const auto &other : junction_boxes)
-        {   
-            long d = box.distance(other);
-            if (d != 0 && d < best_distance)
-            {
-                best_distance = d;
-                best_box = &other;
-            }
+        for(auto y=x+1; y<junction_boxes.size(); y++)
+        {
+
+            auto d = junction_boxes[x].distance(junction_boxes[y]);
+            Q.emplace(junction_boxes[x].circuit_number, junction_boxes[y].circuit_number, d);
         }
+    }
 
-        auto baseCircuit = circuitContaining(circuits, box);
-        if (baseCircuit == -1)
-            baseCircuit = circuitContaining(circuits, *best_box);
-        if (baseCircuit == -1)
-            baseCircuit = createCircuit(circuits, box, *best_box);
+    std::vector<std::vector<int>> circuits;
+    for (size_t i = 0; i < connections; i++)
+    {
+        auto shortest = Q.top();
+        Q.pop();
 
-        auto boxCircuit = circuitContaining(circuits, box);
+        auto baseCircuit = circuitContaining(circuits, shortest.box1);
+        if (baseCircuit == -1)
+            baseCircuit = circuitContaining(circuits, shortest.box2);
+        if (baseCircuit == -1)
+            baseCircuit = createCircuit(circuits, shortest.box1, shortest.box2);
+
+        auto boxCircuit = circuitContaining(circuits, shortest.box1);
         if (boxCircuit == -1)
-            addToCircuit(circuits, baseCircuit, box);
+            addToCircuit(circuits, baseCircuit, shortest.box1);
         else if (boxCircuit != baseCircuit)
             mergeCircuits(circuits, baseCircuit, boxCircuit);  
             
-        auto otherCircuit = circuitContaining(circuits, *best_box);
+        auto otherCircuit = circuitContaining(circuits, shortest.box2);
         if (otherCircuit == -1)
-            addToCircuit(circuits, baseCircuit, *best_box);
+            addToCircuit(circuits, baseCircuit, shortest.box2);
         else if (otherCircuit != baseCircuit)
-            mergeCircuits(circuits, baseCircuit, otherCircuit);              
+            mergeCircuits(circuits, baseCircuit, otherCircuit);         
+    }
+    
+    std::priority_queue<int> circuits_q;
+    for(const auto & c : circuits)
+        circuits_q.emplace(c.size());
+
+
+    long total = 1;
+    for (size_t i = 0; i < 3; i++)
+    {
+        auto largest = circuits_q.top();
+        circuits_q.pop();
+        total *= largest;
     }
 
-    return 0;
+    std::cout << total;
+
+    return total;
 }
