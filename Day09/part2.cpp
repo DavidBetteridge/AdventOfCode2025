@@ -23,12 +23,18 @@ struct horizontal_line
     long y;
     long start_x;
     long end_x;
-    horizontal_line(long y, long start_x, long end_x) : y(y), start_x(start_x), end_x(end_x) {};
+
+    long y_original;
+    long start_x_original;
+    long end_x_original;
+
+    horizontal_line(long y, long start_x, long end_x, long y_original, long start_x_original, long end_x_original) : 
+        y(y), start_x(start_x), end_x(end_x), y_original(y_original), start_x_original(start_x_original), end_x_original(end_x_original)  {};
 };
 
 int main()
 {
-    auto lines = read_lines_from_file("sample1.txt");
+    auto lines = read_lines_from_file("input.txt");
     
     std::vector<tile> original_tiles;
     std::set<long> xs;
@@ -84,15 +90,14 @@ int main()
         {
             // Horizontal line
             if (compact_tiles[i].x < compact_tiles[j].x)
-                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[i].x, compact_tiles[j].x);
+                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[i].x, compact_tiles[j].x, original_tiles[i].y, original_tiles[i].x, original_tiles[j].x);
             else
-                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[j].x, compact_tiles[i].x);            
+                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[j].x, compact_tiles[i].x, original_tiles[i].y, original_tiles[j].x, original_tiles[i].x);            
         }
 
     }
 
     long largest = 0;
-    long largest2 = 0;
     for(auto i=0; i < original_tiles.size()-1; i++)
     {
         for(auto j=i+1; j < original_tiles.size(); j++)
@@ -100,20 +105,69 @@ int main()
             auto size = (abs(original_tiles[i].x - original_tiles[j].x)+1) * (abs(original_tiles[i].y - original_tiles[j].y)+1);
             if (size > largest) 
             {
-                // Does this only include green/red original_tiles
-                largest2 = (abs(compact_tiles[i].x - compact_tiles[j].x)+1) * (abs(compact_tiles[i].y - compact_tiles[j].y)+1);
+                auto fromX = compact_tiles[i].x;
+                auto toX = compact_tiles[j].x;
+                auto fromY = compact_tiles[i].y;
+                auto toY = compact_tiles[j].y;
+                if (toX < fromX) std::swap(fromX,toX);
+                if (toY < fromY) std::swap(fromY,toY);
+
+                // Horzontal rows
+                auto ok = true;
+                for(auto c=fromX; c <= toX; c++)
+                {
+                    auto i_match = false;
+                    auto j_match = false;
+                    for(const auto &horizontal_line : horizontal_lines)
+                    {
+                        if (horizontal_line.y <= fromY && horizontal_line.start_x <= c && horizontal_line.end_x >= c)
+                            i_match = true;
+
+                        if (horizontal_line.y >= toY && horizontal_line.start_x <= c && horizontal_line.end_x >= c)
+                            j_match = true;      
+                            
+                        if (i_match && j_match) break;
+                    }
+
+                    if (!i_match || !j_match) 
+                    {
+                        ok=false;
+                        break;
+                    }
+                }
+                if (!ok) continue;
+
+
+                // Vertical rows
+                for(auto c=fromY; c <= toY; c++)
+                {
+                    auto i_match = false;
+                    auto j_match = false;
+                    for(const auto &vertical_line : vertical_lines)
+                    {
+                        if (vertical_line.x <= fromX && vertical_line.start_y <= c && vertical_line.end_y >= c)
+                            i_match = true;
+
+                        if (vertical_line.x >= toX && vertical_line.start_y <= c && vertical_line.end_y >= c)
+                            j_match = true;      
+                            
+                        if (i_match && j_match) break;
+                    }
+
+                    if (!i_match || !j_match) 
+                    {
+                        ok=false;
+                        break;
+                    }
+                }
+                if (!ok) continue;
+
                 largest = size;
-
-                // Every perimmiter cell has to be in the range.
-
-                // e.g top row      compact_tiles[i].x, compact_tiles[i].y --> compact_tiles[j].x, compact_tiles[i].y
-                // so for all compact_tiles[i].x ==> compact_tiles[j].x
-                // Must be a horizontal range with y=compact_tiles[i].y,  startX <= compact_tiles[i].x and endY >= compact_tiles[j].x 
             }
         }
     }
 
 
-    std::cout << largest << ' ' << largest2;
+    std::cout << largest;
 
 }
