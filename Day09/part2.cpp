@@ -23,13 +23,8 @@ struct horizontal_line
     long y;
     long start_x;
     long end_x;
-
-    long y_original;
-    long start_x_original;
-    long end_x_original;
-
     horizontal_line(long y, long start_x, long end_x, long y_original, long start_x_original, long end_x_original) : 
-        y(y), start_x(start_x), end_x(end_x), y_original(y_original), start_x_original(start_x_original), end_x_original(end_x_original)  {};
+        y(y), start_x(start_x), end_x(end_x) {};
 };
 
 int main()
@@ -90,9 +85,9 @@ int main()
         {
             // Horizontal line
             if (compact_tiles[i].x < compact_tiles[j].x)
-                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[i].x, compact_tiles[j].x, original_tiles[i].y, original_tiles[i].x, original_tiles[j].x);
+                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[i].x, compact_tiles[j].x);
             else
-                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[j].x, compact_tiles[i].x, original_tiles[i].y, original_tiles[j].x, original_tiles[i].x);            
+                horizontal_lines.emplace_back(compact_tiles[i].y, compact_tiles[j].x, compact_tiles[i].x);            
         }
 
     }
