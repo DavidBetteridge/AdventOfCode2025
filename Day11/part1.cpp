@@ -28,8 +28,8 @@ int main() {
 
     std::map<std::string,device> devices;
     for (const auto& line : lines) {
-        auto parts = split(line, ": ");
-        auto connections = split(parts[1], " ");
+        const auto parts = split(line, ": ");
+        const auto connections = split(parts[1], " ");
         devices.emplace(parts[0], device{parts[0],connections});
     }
     const auto total = walk(devices, "you");
